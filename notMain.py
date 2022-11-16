@@ -16,6 +16,7 @@ from jinja2 import Environment, FileSystemLoader
 """
 vacancies1.csv
 Аналитик
+uwu
 """
 
 class Report:
