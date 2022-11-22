@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader
 
 
 """
-vacancies1.csv
+vacancies.csv
 Аналитик
 uwu
 """
@@ -206,20 +206,19 @@ class DataSet:
         xls = Report(self.filtering_parameter)
 
         header = ["Год", "Средняя зарплата", f"Средняя зарплата - {self.filtering_parameter}", "Количество вакансий", f"Количество вакансий - {self.filtering_parameter}"]
-        xls.generate_excel("Статистика по годам", [self.dict_sum_salary_by_year, self.dict_count_by_year, self.dict_sum_salary_by_year_for_profession, self.dict_count_by_year_for_profession], header, 'A', 'E')
+        if choise == "Вакансии":
+            xls.generate_excel("Статистика по годам", [self.dict_sum_salary_by_year, self.dict_count_by_year, self.dict_sum_salary_by_year_for_profession, self.dict_count_by_year_for_profession], header, 'A', 'E')
 
-        header = ["Город", "Уровень зарплат"]
-        xls.generate_excel("Статистика по городам", [sorted_dict_sum_salary_by_year_for_city], header, 'A', 'B')
+            header = ["Город", "Уровень зарплат"]
+            xls.generate_excel("Статистика по городам", [sorted_dict_sum_salary_by_year_for_city], header, 'A', 'B')
 
-        header = ["Город", "Доля вакансий"]
-        xls.generate_excel("Статистика по городам", [sorted_dict_fraction_by_city], header, 'D', 'E', "percent")
-        xls.ws.column_dimensions["C"].width = 2
+            header = ["Город", "Доля вакансий"]
+            xls.generate_excel("Статистика по городам", [sorted_dict_fraction_by_city], header, 'D', 'E', "percent")
+            xls.ws.column_dimensions["C"].width = 2
 
-        xls.save_excel()
-
-        xls.generate_image(self.dict_sum_salary_by_year, self.dict_sum_salary_by_year_for_profession, self.dict_count_by_year, self.dict_count_by_year_for_profession, sorted_dict_sum_salary_by_year_for_city, sorted_dict_fraction_by_city)
-
-        xls.create_pdf()
+            xls.save_excel()
+        elif choise == "Статистика":
+            xls.generate_image(self.dict_sum_salary_by_year, self.dict_sum_salary_by_year_for_profession, self.dict_count_by_year, self.dict_count_by_year_for_profession, sorted_dict_sum_salary_by_year_for_city, sorted_dict_fraction_by_city)
 
 
     def set_statistics(self, list_vacancy):
@@ -275,5 +274,6 @@ currency_to_rub = {
 
 file_name = input("Введите название файла: ")
 profession = input("Введите название профессии: ")
+choise = input("Введите как отобразить данные: ")
 
 correct_list_vacancies = DataSet(file_name, profession)
