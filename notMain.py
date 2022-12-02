@@ -3,7 +3,7 @@ import re
 import typing
 import openpyxl
 from openpyxl.styles import colors
-from openpyxl.styles import Font, Color, Border, Side
+from openpyxl.styles import Font, Border, Side
 from openpyxl.styles.numbers import FORMAT_PERCENTAGE_00
 from openpyxl import Workbook
 import matplotlib as mpl
