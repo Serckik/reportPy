@@ -1,6 +1,11 @@
 import csv
 import openpyxl
+<<<<<<< HEAD
 from openpyxl.styles import Font, Color, Border, Side
+=======
+from openpyxl.styles import colors
+from openpyxl.styles import Font, Border, Side
+>>>>>>> develop
 from openpyxl.styles.numbers import FORMAT_PERCENTAGE_00
 from openpyxl import Workbook
 import matplotlib.pyplot as plt
