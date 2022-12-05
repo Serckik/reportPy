@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pdfkit
 from jinja2 import Environment, FileSystemLoader
+import doctest
 
 """
 vacancies.csv
@@ -343,6 +344,14 @@ class Vacancy:
 
     Attributes:
         vacansy_dict (dict): Словарь со всеми элементами одной вакансии
+
+    >>> vacancy = {'name': 'IT аналитик', 'salary_from': 40000, 'salary_to': '45000.0', 'salary_currency': 'RUR', 'area_name': 'Санкт-Петербург', 'published_at': 2007}
+    >>> Vacancy.get_vacancy_type(vacancy)
+    'Vacancy'
+    >>> Vacancy.get_vacancy_fields(vacancy),
+    (['IT аналитик', 40000, '45000.0', 'RUR', 'Санкт-Петербург', 2007],)
+    >>> Vacancy.get_vacancy_field(vacancy, 'name')
+    'IT аналитик'
     """
 
     def __init__(self, list):
@@ -354,6 +363,21 @@ class Vacancy:
 
         self.vacansy_dict = list
 
+    @staticmethod
+    def get_vacancy_type(list):
+        return type(Vacancy(list)).__name__
+
+    @staticmethod
+    def get_vacancy_fields(list):
+        objects = []
+        for key in list:
+            objects.append(list[key])
+        return objects
+
+    @staticmethod
+    def get_vacancy_field(list, field_name):
+        return Vacancy(list).vacansy_dict[field_name]
+
 class Salary:
     """Класс со всеми атрибутами зарплаты
 
@@ -361,6 +385,19 @@ class Salary:
         salary_from (str): Нижняя граница зарплаты
         salary_to (str): Верхняя граница зарплаты
         salary_currency (str): Валюта
+
+    >>> Salary.get_salary_type([40,50,'RUR'])
+    'Salary'
+    >>> Salary.get_salary_from([40,50,'RUR'])
+    40
+    >>> Salary.get_salary_to([40,50,'RUR'])
+    50
+    >>> Salary.get_salary_currency([40,50,'AZN'])
+    'AZN'
+    >>> Salary.get_salary([40,50,'RUR'])
+    45
+    >>> Salary.get_salary([40, 50, 'UAH'])
+    73
     """
 
     def __init__(self, list):
@@ -371,6 +408,27 @@ class Salary:
         self.salary_from, \
         self.salary_to,\
         self.salary_currency = list
+
+    @staticmethod
+    def get_salary_type(list):
+        return type(Salary(list)).__name__
+
+    @staticmethod
+    def get_salary_from(list):
+        return Salary(list).salary_from
+
+    @staticmethod
+    def get_salary_to(list):
+        return Salary(list).salary_to
+
+    @staticmethod
+    def get_salary_currency(list):
+        return Salary(list).salary_currency
+
+    @staticmethod
+    def get_salary(list):
+        salary = Salary(list)
+        return int((float(salary.salary_from) + float(salary.salary_to)) // 2 * currency_to_rub[salary.salary_currency])
 
 currency_to_rub = {
     "AZN": 35.68,
@@ -384,10 +442,9 @@ currency_to_rub = {
     "USD": 60.66,
     "UZS": 0.0055,
 }
-
-file_name = input("Введите название файла: ")
-profession = input("Введите название профессии: ")
-choise = input("Введите как отобразить данные: ")
-
-data_set = DataSet(file_name, profession)
-data_set.csv_reader()
+if __name__ == '__main__':
+    file_name = input("Введите название файла: ")
+    profession = input("Введите название профессии: ")
+    choise = input("Введите как отобразить данные: ")
+    data_set = DataSet(file_name, profession)
+    data_set.csv_reader()
