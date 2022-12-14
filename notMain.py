@@ -225,6 +225,7 @@ class DataSet:
             quit()
         data_header = data[0]
         vacancies = [x for x in data[1:]]
+        self.csv_splitter(vacancies)
         self.csv_filer(data_header, vacancies)
 
     def csv_splitter(self, vacancies):
