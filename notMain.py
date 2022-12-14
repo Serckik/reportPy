@@ -10,6 +10,7 @@ import pdfkit
 from jinja2 import Environment, FileSystemLoader
 from multiprocessing import Pool
 from datetime import datetime
+import concurrent.futures
 import doctest
 
 """
@@ -411,13 +412,14 @@ if __name__ == '__main__':
     profession = input("Введите название профессии: ")
     start = datetime.now()
     data_set = DataSet(file_name, profession)
-    pool = Pool(14)
-    results = pool.map(data_set.splitter_csv_reader, range(2007, 2023))
-    for year_stat in results:
-        dict_sum_salary_by_year |= year_stat[0]
-        dict_count_by_year |= year_stat[1]
-        dict_sum_salary_by_year_for_profession |= year_stat[2]
-        dict_count_by_year_for_profession |= year_stat[3]
+    """pool = Pool(14)
+    results = pool.map(data_set.splitter_csv_reader, range(2007, 2023))"""
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for result in executor.map(data_set.splitter_csv_reader, range(2007, 2023)):
+            dict_sum_salary_by_year |= result[0]
+            dict_count_by_year |= result[1]
+            dict_sum_salary_by_year_for_profession |= result[2]
+            dict_count_by_year_for_profession |= result[3]
     print(f"Динамика уровня зарплат по годам: {dict_sum_salary_by_year}")
     print(f"Динамика количества вакансий по годам: {dict_count_by_year}")
     print(f"Динамика уровня зарплат по годам для выбранной профессии: {dict_sum_salary_by_year_for_profession}")
