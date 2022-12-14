@@ -1,3 +1,4 @@
+import array
 import csv
 import openpyxl
 from openpyxl.styles import Font, Border, Side
@@ -7,12 +8,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pdfkit
 from jinja2 import Environment, FileSystemLoader
+from multiprocessing import Pool
+from datetime import datetime
 import doctest
 
 """
 vacancies.csv
 Аналитик
-Вакансии
 """
 
 class Report:
@@ -198,13 +200,6 @@ class DataSet:
         filtering_parameter (str): Название профессии
     """
 
-    dict_count_by_year = {}
-    dict_sum_salary_by_year = {}
-    dict_count_by_year_for_profession = {}
-    dict_sum_salary_by_year_for_profession = {}
-    dict_count_by_year_for_city = {}
-    dict_sum_salary_by_year_for_city = {}
-
     def __init__(self, file_name, filtering_parameter):
         """Инициализирует объект DataSet
 
@@ -229,19 +224,21 @@ class DataSet:
         self.csv_filer(data_header, vacancies)
 
     def csv_splitter(self, vacancies):
-        previous_year = ""
-        data = [["name","salary_from","salary_to","salary_currency","area_name","published_at"]]
+        for i in range(2007, 2023):
+            with open("csv_data/" + str(i) + ".csv", "a", newline="", encoding="utf-8-sig") as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(["name", "salary_from", "salary_to", "salary_currency", "area_name", "published_at"])
         for item in vacancies:
             year = item[-1].split("-")[0]
-            if year == previous_year or previous_year == "":
-                data.append(item)
-                previous_year = year
-            else:
-                with open("csv_data/" + previous_year + ".csv", "w", newline="", encoding="utf-8-sig") as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerows(data)
-                previous_year = year
-                data = [["name","salary_from","salary_to","salary_currency","area_name","published_at"]]
+            with open("csv_data/" + year + ".csv", "a", newline="", encoding="utf-8-sig") as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(item)
+
+    def splitter_csv_reader(self, file_name):
+        data = list(csv.reader(open("csv_data/"+str(file_name)+".csv", encoding="utf-8-sig")))
+        data_header = data[0]
+        vacancies = [x for x in data[1:]]
+        return self.csv_filer(data_header, vacancies)
 
     def csv_filer(self, list_naming, reader):
         """Фильтрация вакансий в csv файле
@@ -250,6 +247,11 @@ class DataSet:
             list_naming (List): Список шапки csv файла
             reader (List): Список вакансий
         """
+
+        dict_count_by_year = {}
+        dict_sum_salary_by_year = {}
+        dict_count_by_year_for_profession = {}
+        dict_sum_salary_by_year_for_profession = {}
 
         reader = [x for x in reader if not "" in x and len(x) == len(list_naming)]
         filter_list_vacancies = []
@@ -266,82 +268,42 @@ class DataSet:
             filter_list_vacancies.append(Vacancy(dict_vacancy))
 
         for item in filter_list_vacancies:
-            self.set_statistics(item.vacansy_dict)
+            self.set_statistics(item.vacansy_dict, dict_count_by_year, dict_sum_salary_by_year, dict_count_by_year_for_profession, dict_sum_salary_by_year_for_profession)
 
         if len(filter_list_vacancies) == 0:
             print("Нет данных")
             quit()
 
-        for item in self.dict_sum_salary_by_year:
-            self.dict_sum_salary_by_year[item] = self.dict_sum_salary_by_year[item] // self.dict_count_by_year[item]
-            if item not in self.dict_sum_salary_by_year_for_profession:
-                self.dict_sum_salary_by_year_for_profession[item] = 0
-                self.dict_count_by_year_for_profession[item] = 0
+        for item in dict_sum_salary_by_year:
+            dict_sum_salary_by_year[item] = dict_sum_salary_by_year[item] // dict_count_by_year[item]
+            if item not in dict_sum_salary_by_year_for_profession:
+                dict_sum_salary_by_year_for_profession[item] = 0
+                dict_count_by_year_for_profession[item] = 0
                 continue
-            self.dict_sum_salary_by_year_for_profession[item] = self.dict_sum_salary_by_year_for_profession[item] // self.dict_count_by_year_for_profession[item]
+            dict_sum_salary_by_year_for_profession[item] = dict_sum_salary_by_year_for_profession[item] // dict_count_by_year_for_profession[item]
 
-        sorted_dict_sum_salary_by_year_for_city = {}
-        sorted_dict_fraction_by_city = {}
-        for item in self.dict_sum_salary_by_year_for_city:
-            if(int(len(reader) * 0.01) <= self.dict_count_by_year_for_city[item]):
-                sorted_dict_sum_salary_by_year_for_city[item] = self.dict_sum_salary_by_year_for_city[item] // self.dict_count_by_year_for_city[item]
-                sorted_dict_fraction_by_city[item] = round(self.dict_count_by_year_for_city[item] / len(reader), 4)
+        return [dict_sum_salary_by_year, dict_count_by_year, dict_sum_salary_by_year_for_profession, dict_count_by_year_for_profession]
 
-
-        print(f"Динамика уровня зарплат по годам: {self.dict_sum_salary_by_year}")
-        print(f"Динамика количества вакансий по годам: {self.dict_count_by_year}")
-        print(f"Динамика уровня зарплат по годам для выбранной профессии: {self.dict_sum_salary_by_year_for_profession}")
-        print(f"Динамика количества вакансий по годам для выбранной профессии: {self.dict_count_by_year_for_profession}")
-
-        sorted_dict_sum_salary_by_year_for_city = dict(sorted(sorted_dict_sum_salary_by_year_for_city.items(), key=lambda item: item[1], reverse=True)[0:10])
-        sorted_dict_fraction_by_city = dict(sorted(sorted_dict_fraction_by_city.items(), key=lambda item: item[1], reverse=True)[0:10])
-        print(f"Уровень зарплат по городам (в порядке убывания): {sorted_dict_sum_salary_by_year_for_city}")
-        print(f"Доля вакансий по городам (в порядке убывания): {sorted_dict_fraction_by_city}")
-        xls = Report(self.filtering_parameter)
-
-        header = ["Год", "Средняя зарплата", f"Средняя зарплата - {self.filtering_parameter}", "Количество вакансий", f"Количество вакансий - {self.filtering_parameter}"]
-        if choise == "Вакансии":
-            xls.generate_excel("Статистика по годам", [self.dict_sum_salary_by_year, self.dict_count_by_year, self.dict_sum_salary_by_year_for_profession, self.dict_count_by_year_for_profession], header, 'A', 'E')
-
-            header = ["Город", "Уровень зарплат"]
-            xls.generate_excel("Статистика по городам", [sorted_dict_sum_salary_by_year_for_city], header, 'A', 'B')
-
-            header = ["Город", "Доля вакансий"]
-            xls.generate_excel("Статистика по городам", [sorted_dict_fraction_by_city], header, 'D', 'E', "percent")
-            xls.ws.column_dimensions["C"].width = 2
-
-            xls.save_excel()
-        elif choise == "Статистика":
-            xls.generate_image(self.dict_sum_salary_by_year, self.dict_sum_salary_by_year_for_profession, self.dict_count_by_year, self.dict_count_by_year_for_profession, sorted_dict_sum_salary_by_year_for_city, sorted_dict_fraction_by_city)
-
-
-    def set_statistics(self, list_vacancy):
+    def set_statistics(self, list_vacancy, dict_count_by_year, dict_sum_salary_by_year, dict_count_by_year_for_profession, dict_sum_salary_by_year_for_profession):
         """Рассчитывает всю статистику
 
         Args:
             list_vacancy (Dict): Словарь с элементами одной вакансии
         """
 
-        if list_vacancy["published_at"] not in self.dict_count_by_year:
-            self.dict_count_by_year[list_vacancy["published_at"]] = 1
-            self.dict_sum_salary_by_year[list_vacancy["published_at"]] = list_vacancy["salary_from"]
+        if list_vacancy["published_at"] not in dict_count_by_year:
+            dict_count_by_year[list_vacancy["published_at"]] = 1
+            dict_sum_salary_by_year[list_vacancy["published_at"]] = list_vacancy["salary_from"]
         else:
-            self.dict_count_by_year[list_vacancy["published_at"]] += 1
-            self.dict_sum_salary_by_year[list_vacancy["published_at"]] += list_vacancy["salary_from"]
+            dict_count_by_year[list_vacancy["published_at"]] += 1
+            dict_sum_salary_by_year[list_vacancy["published_at"]] += list_vacancy["salary_from"]
 
-        if list_vacancy["published_at"] not in self.dict_count_by_year_for_profession and self.filtering_parameter in list_vacancy["name"]:
-            self.dict_count_by_year_for_profession[list_vacancy["published_at"]] = 1
-            self.dict_sum_salary_by_year_for_profession[list_vacancy["published_at"]] = list_vacancy["salary_from"]
+        if list_vacancy["published_at"] not in dict_count_by_year_for_profession and self.filtering_parameter in list_vacancy["name"]:
+            dict_count_by_year_for_profession[list_vacancy["published_at"]] = 1
+            dict_sum_salary_by_year_for_profession[list_vacancy["published_at"]] = list_vacancy["salary_from"]
         elif self.filtering_parameter in list_vacancy["name"]:
-            self.dict_count_by_year_for_profession[list_vacancy["published_at"]] += 1
-            self.dict_sum_salary_by_year_for_profession[list_vacancy["published_at"]] += list_vacancy["salary_from"]
-
-        if list_vacancy["area_name"] not in self.dict_count_by_year_for_city:
-            self.dict_count_by_year_for_city[list_vacancy["area_name"]] = 1
-            self.dict_sum_salary_by_year_for_city[list_vacancy["area_name"]] = list_vacancy["salary_from"]
-        else:
-            self.dict_count_by_year_for_city[list_vacancy["area_name"]] += 1
-            self.dict_sum_salary_by_year_for_city[list_vacancy["area_name"]] += list_vacancy["salary_from"]
+            dict_count_by_year_for_profession[list_vacancy["published_at"]] += 1
+            dict_sum_salary_by_year_for_profession[list_vacancy["published_at"]] += list_vacancy["salary_from"]
 
     def formatter(self, row):
         """Форматирует отдельные элементы вакансии для лучшего отображения
@@ -438,9 +400,26 @@ currency_to_rub = {
     "USD": 60.66,
     "UZS": 0.0055,
 }
+
+dict_count_by_year = {}
+dict_sum_salary_by_year = {}
+dict_count_by_year_for_profession = {}
+dict_sum_salary_by_year_for_profession = {}
+
 if __name__ == '__main__':
     file_name = input("Введите название файла: ")
     profession = input("Введите название профессии: ")
-    choise = input("Введите как отобразить данные: ")
+    start = datetime.now()
     data_set = DataSet(file_name, profession)
-    data_set.csv_reader()
+    pool = Pool(14)
+    results = pool.map(data_set.splitter_csv_reader, range(2007, 2023))
+    for year_stat in results:
+        dict_sum_salary_by_year |= year_stat[0]
+        dict_count_by_year |= year_stat[1]
+        dict_sum_salary_by_year_for_profession |= year_stat[2]
+        dict_count_by_year_for_profession |= year_stat[3]
+    print(f"Динамика уровня зарплат по годам: {dict_sum_salary_by_year}")
+    print(f"Динамика количества вакансий по годам: {dict_count_by_year}")
+    print(f"Динамика уровня зарплат по годам для выбранной профессии: {dict_sum_salary_by_year_for_profession}")
+    print(f"Динамика количества вакансий по годам для выбранной профессии: {dict_count_by_year_for_profession}")
+    print(datetime.now() - start)
