@@ -8,3 +8,6 @@
 С многопроцессорной обработкой 5 секунд
 ![image](https://user-images.githubusercontent.com/63666583/207594185-be817bd1-9c45-443e-9c46-9db5c85dbd65.png)
 
+C ProcessPoolExecutor 4 секунды
+![image](https://user-images.githubusercontent.com/63666583/207598308-7424ecba-04be-4027-b62b-ff8ed232adbe.png)
+
