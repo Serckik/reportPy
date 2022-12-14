@@ -12,6 +12,7 @@ import doctest
 """
 vacancies.csv
 Аналитик
+Вакансии
 """
 
 class Report:
@@ -226,6 +227,21 @@ class DataSet:
         vacancies = [x for x in data[1:]]
         self.csv_filer(data_header, vacancies)
 
+    def csv_splitter(self, vacancies):
+        previous_year = ""
+        data = [["name","salary_from","salary_to","salary_currency","area_name","published_at"]]
+        for item in vacancies:
+            year = item[-1].split("-")[0]
+            if year == previous_year or previous_year == "":
+                data.append(item)
+                previous_year = year
+            else:
+                with open("csv_data/" + previous_year + ".csv", "w", newline="", encoding="utf-8-sig") as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerows(data)
+                previous_year = year
+                data = [["name","salary_from","salary_to","salary_currency","area_name","published_at"]]
+
     def csv_filer(self, list_naming, reader):
         """Фильтрация вакансий в csv файле
 
@@ -344,14 +360,6 @@ class Vacancy:
 
     Attributes:
         vacansy_dict (dict): Словарь со всеми элементами одной вакансии
-
-    >>> vacancy = {'name': 'IT аналитик', 'salary_from': 40000, 'salary_to': '45000.0', 'salary_currency': 'RUR', 'area_name': 'Санкт-Петербург', 'published_at': 2007}
-    >>> Vacancy.get_vacancy_type(vacancy)
-    'Vacancy'
-    >>> Vacancy.get_vacancy_fields(vacancy),
-    (['IT аналитик', 40000, '45000.0', 'RUR', 'Санкт-Петербург', 2007],)
-    >>> Vacancy.get_vacancy_field(vacancy, 'name')
-    'IT аналитик'
     """
 
     def __init__(self, list):
@@ -385,19 +393,6 @@ class Salary:
         salary_from (str): Нижняя граница зарплаты
         salary_to (str): Верхняя граница зарплаты
         salary_currency (str): Валюта
-
-    >>> Salary.get_salary_type([40,50,'RUR'])
-    'Salary'
-    >>> Salary.get_salary_from([40,50,'RUR'])
-    40
-    >>> Salary.get_salary_to([40,50,'RUR'])
-    50
-    >>> Salary.get_salary_currency([40,50,'AZN'])
-    'AZN'
-    >>> Salary.get_salary([40,50,'RUR'])
-    45
-    >>> Salary.get_salary([40, 50, 'UAH'])
-    73
     """
 
     def __init__(self, list):
