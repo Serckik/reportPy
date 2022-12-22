@@ -11,3 +11,5 @@
 C ProcessPoolExecutor 4 секунды
 ![image](https://user-images.githubusercontent.com/63666583/207598308-7424ecba-04be-4027-b62b-ff8ed232adbe.png)
 
+Количество каждых валют в вакансиях
+![image](https://user-images.githubusercontent.com/63666583/209112082-a21bb40f-98b9-42d1-96ce-7d672dab85c3.png)
