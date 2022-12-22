@@ -13,3 +13,6 @@ C ProcessPoolExecutor 4 секунды
 
 Количество каждых валют в вакансиях
 ![image](https://user-images.githubusercontent.com/63666583/209119108-c3156721-c86f-4c8e-9465-f8836fc4d47b.png)
+
+Таблица значения валют по датам
+![image](https://user-images.githubusercontent.com/63666583/209167356-336f9e6f-6c8d-42cf-aca8-f92f7275e0c5.png)
