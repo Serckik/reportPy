@@ -8,13 +8,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pdfkit
 from jinja2 import Environment, FileSystemLoader
-from multiprocessing import Pool
 from datetime import datetime
 import concurrent.futures
 import doctest
+import pandas as pd
 
 """
-vacancies.csv
+adadadadaadadd
+vacancies_dif_currencies.csv
 Аналитик
 """
 
@@ -221,8 +222,7 @@ class DataSet:
             quit()
         data_header = data[0]
         vacancies = [x for x in data[1:]]
-        self.csv_splitter(vacancies)
-        self.csv_filer(data_header, vacancies)
+        return [data_header, vacancies]
 
     def csv_splitter(self, vacancies):
         for i in range(2007, 2023):
@@ -254,7 +254,6 @@ class DataSet:
         dict_count_by_year_for_profession = {}
         dict_sum_salary_by_year_for_profession = {}
 
-        reader = [x for x in reader if not "" in x and len(x) == len(list_naming)]
         filter_list_vacancies = []
         for i in range(len(reader)):
             dict_vacancy = {}
@@ -264,9 +263,16 @@ class DataSet:
                     vacancies_element = vacancies_element.split("\n")
                     vacancies_element = [x.strip() for x in vacancies_element]
                 dict_vacancy[list_naming[j]] = vacancies_element
+            if (dict_vacancy["salary_from"] == "" and dict_vacancy["salary_to"] == "") or dict_vacancy["salary_currency"] == "":
+                continue
             dict_vacancy["salary_from"] = Salary([dict_vacancy["salary_from"], dict_vacancy["salary_to"], dict_vacancy["salary_currency"]])
             dict_vacancy = self.formatter(dict_vacancy)
+            if dict_vacancy == []:
+                continue
             filter_list_vacancies.append(Vacancy(dict_vacancy))
+
+        if self.filtering_parameter == "none" or self.filtering_parameter == "":
+            return filter_list_vacancies
 
         for item in filter_list_vacancies:
             self.set_statistics(item.vacansy_dict, dict_count_by_year, dict_sum_salary_by_year, dict_count_by_year_for_profession, dict_sum_salary_by_year_for_profession)
@@ -316,7 +322,30 @@ class DataSet:
 
         date = row["published_at"][:10].split("-")
         row["published_at"] = int(date[0])
-        row["salary_from"] = int((float(row["salary_from"].salary_from) + float(row["salary_from"].salary_to)) // 2 * currency_to_rub[row["salary_from"].salary_currency])
+        if row["salary_from"].salary_currency not in currency_read[0] and row["salary_from"].salary_currency != 'RUR':
+            return []
+        currency_number = 0
+        for i in range(len(currency_read[0])):
+            if row["salary_from"].salary_currency == currency_read[0][i]:
+                currency_number = i
+
+        currency_value = 1
+        flag = False
+        if row["salary_from"].salary_currency != 'RUR':
+            for item in currency_read[1]:
+                if item[0] == f'{date[0]}-{date[1]}':
+                    currency_value = item[currency_number]
+                    flag = True
+        if (currency_value == 'NONE' or not flag) and row["salary_from"].salary_currency != 'RUR':
+            return []
+
+        if row["salary_from"].salary_from == "":
+            row["salary_from"] = int(float(row["salary_from"].salary_to) * float(currency_value))
+        elif row["salary_from"].salary_to == "":
+            row["salary_from"] = int(float(row["salary_from"].salary_from) * float(currency_value))
+        else:
+            row["salary_from"] = int((float(row["salary_from"].salary_from) + float(row["salary_from"].salary_to)) // 2 * float(currency_value))
+
         return row
 
 class Vacancy:
@@ -408,20 +437,26 @@ dict_count_by_year_for_profession = {}
 dict_sum_salary_by_year_for_profession = {}
 
 if __name__ == '__main__':
-    file_name = input("Введите название файла: ")
-    profession = input("Введите название профессии: ")
-    start = datetime.now()
+    file_name = "vacancies_dif_currencies.csv"
+    currency_file = "currency.csv"
+    profession = ""
+
+    currency_set = DataSet(currency_file, profession)
+    currency_read = currency_set.csv_reader()
+
     data_set = DataSet(file_name, profession)
-    """pool = Pool(14)
-    results = pool.map(data_set.splitter_csv_reader, range(2007, 2023))"""
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        for result in executor.map(data_set.splitter_csv_reader, range(2007, 2023)):
-            dict_sum_salary_by_year |= result[0]
-            dict_count_by_year |= result[1]
-            dict_sum_salary_by_year_for_profession |= result[2]
-            dict_count_by_year_for_profession |= result[3]
-    print(f"Динамика уровня зарплат по годам: {dict_sum_salary_by_year}")
-    print(f"Динамика количества вакансий по годам: {dict_count_by_year}")
-    print(f"Динамика уровня зарплат по годам для выбранной профессии: {dict_sum_salary_by_year_for_profession}")
-    print(f"Динамика количества вакансий по годам для выбранной профессии: {dict_count_by_year_for_profession}")
-    print(datetime.now() - start)
+    read_vacancies = data_set.csv_reader()
+    filtering_data = data_set.csv_filer(read_vacancies[0], read_vacancies[1])
+    arr = []
+    for item in filtering_data:
+        sub = {}
+        item = item.vacansy_dict
+        for j in item:
+            if j != 'salary_to' and j != 'salary_currency':
+                sub[j] = (item[j])
+        arr.append(sub)
+    df = pd.DataFrame(data=arr)
+    df.to_csv('filter_vacancies.csv', index=False, encoding="utf-8-sig")
+    print(df)
+
+

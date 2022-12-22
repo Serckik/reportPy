@@ -5,6 +5,8 @@ vacancies.csv
 vacancies_big.csv
 vacancies_medium.csv
 vacancies_small.csv
+vacancies_dif_currencies.csv
+XML_daily.xml
 .idea/
 venv/
 csv_data/
